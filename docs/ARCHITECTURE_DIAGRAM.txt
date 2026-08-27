@@ -1,0 +1,38 @@
+GenAI Enterprise Knowledge Assistant
+Architecture
+
+                    +----------------------+
+                    |      Streamlit UI    |
+                    +----------+-----------+
+                               |
+                 +-------------+-------------+
+                 |                           |
+          Document Upload              User Question
+                 |                           |
+          Text Extraction               Embedding
+                 |                           |
+              Chunking                       |
+                 |                           |
+             Embedding                       |
+                 |                           |
+                 +-------------+-------------+
+                               |
+                         +-----v-----+
+                         | ChromaDB  |
+                         +-----+-----+
+                               |
+                      Semantic Retrieval
+                               |
+                            Top-K
+                               |
+                    Distance Threshold
+                               |
+                      Relevant Context
+                               |
+                       Prompt + Context
+                               |
+                    Ollama / Llama 3.2
+                               |
+                       Grounded Answer
+                               |
+                         Streamlit UI

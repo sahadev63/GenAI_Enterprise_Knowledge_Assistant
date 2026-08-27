@@ -1,0 +1,16 @@
+Final Submission Checklist
+
+[PASS] RAG pipeline tested
+[PASS] Retrieval evaluation completed
+[PASS] RAG evaluation completed
+[PASS] README included
+[PASS] requirements.txt included
+[PASS] docs/ included
+[PASS] evaluation results documented
+[PASS] data/vectorstore included
+[PASS] .venv excluded
+[PASS] .env excluded
+[PASS] __pycache__ excluded
+[PASS] .pyc files excluded
+[PASS] .vscode excluded
+[PASS] old src/ implementation excluded

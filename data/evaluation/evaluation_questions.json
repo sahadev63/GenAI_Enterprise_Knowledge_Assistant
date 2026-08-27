@@ -1,0 +1,52 @@
+[
+  {
+    "question": "How many annual leave days are employees entitled to?",
+    "expected_answer": "Employees are entitled to 24 days of annual leave every year.",
+    "expected_retrieval": true
+  },
+  {
+    "question": "How many days of annual leave can an employee take each year?",
+    "expected_answer": "Employees are entitled to 24 days of annual leave every year.",
+    "expected_retrieval": true
+  },
+  {
+    "question": "How early should employees submit a leave request?",
+    "expected_answer": "Employees should submit their leave request at least 5 working days before the planned leave.",
+    "expected_retrieval": true
+  },
+  {
+    "question": "How many working days before planned leave should the request be submitted?",
+    "expected_answer": "Employees should submit their leave request at least 5 working days before the planned leave.",
+    "expected_retrieval": true
+  },
+  {
+    "question": "When can emergency leave be requested?",
+    "expected_answer": "Emergency leave can be requested when required.",
+    "expected_retrieval": true
+  },
+  {
+    "question": "Who is responsible for approving leave requests?",
+    "expected_answer": "Managers are responsible for approving leave requests.",
+    "expected_retrieval": true
+  },
+  {
+    "question": "What is the company's laptop replacement policy?",
+    "expected_answer": "The available documents do not contain information about laptop replacement.",
+    "expected_retrieval": false
+  },
+  {
+    "question": "What is the company's work-from-home allowance?",
+    "expected_answer": "The available documents do not contain information about work-from-home allowance.",
+    "expected_retrieval": false
+  },
+  {
+    "question": "How many sick leave days are employees entitled to?",
+    "expected_answer": "The available documents do not contain information about sick leave.",
+    "expected_retrieval": false
+  },
+  {
+    "question": "How many working days of remote work are employees allowed?",
+    "expected_answer": "The available documents do not contain information about remote work.",
+    "expected_retrieval": false
+  }
+]

@@ -1,0 +1,4 @@
+# RAG configuration
+
+RAG_TOP_K = 3
+RAG_DISTANCE_THRESHOLD = 1.0

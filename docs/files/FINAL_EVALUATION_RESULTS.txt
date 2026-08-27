@@ -1,0 +1,34 @@
+GenAI Enterprise Knowledge Assistant
+Final Evaluation Results
+
+Retrieval Evaluation
+--------------------
+True Positives  : 6
+True Negatives  : 3
+False Positives : 1
+False Negatives : 0
+Precision       : 85.71%
+Recall          : 100.00%
+F1 Score        : 92.31%
+
+RAG Pipeline Evaluation
+-----------------------
+Tests Passed    : 5/5
+Success Rate    : 100.00%
+
+RAG Pipeline Tests
+------------------
+1. Known Question            PASS
+2. Paraphrased Known Question PASS
+3. Unknown Question          PASS
+4. Partial Information       PASS
+5. Unrelated Question        PASS
+
+Evaluation Observation
+----------------------
+The sick-leave retrieval test produced one false positive because a
+document chunk was retrieved even though the evaluation expected the
+information to be unavailable. This is documented as a retrieval-evaluation
+limitation.
+
+The complete RAG pipeline still passed all five end-to-end tests.
