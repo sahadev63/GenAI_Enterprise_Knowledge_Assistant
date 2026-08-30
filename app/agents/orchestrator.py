@@ -85,8 +85,30 @@ class AgentOrchestrator:
                     if len(plan.subtasks) > 1
                     else FALLBACK
                 )
-                # Even a fallback response receives a validation result.
-                validation = self._safe_validate(subtask, answer, evidence, trace, index)
+                # For a multi-part question, an unavailable subtask is an
+                # intentional, evidence-based abstention rather than an
+                # invalid factual claim. Mark that subtask as successfully
+                # validated so a valid partial answer is not downgraded to
+                # "unverified" merely because another requested topic is
+                # absent from the documents.
+                if len(plan.subtasks) > 1:
+                    validation = ValidationResult(
+                        supported=True,
+                        checked=True,
+                        unsupported_claims=[],
+                        reason="No evidence was retrieved for this subtask; explicit missing-information abstention is valid.",
+                    )
+                    trace.append(
+                        f"Validator accepted subtask {index} as an explicit "
+                        "missing-information abstention."
+                    )
+                else:
+                    # A single unanswered question remains an unverified
+                    # fallback and is handled conservatively.
+                    validation = self._safe_validate(
+                        subtask, answer, evidence, trace, index
+                    )
+
                 answers.append(answer if validation.supported else FALLBACK)
                 validations.append(validation)
                 continue

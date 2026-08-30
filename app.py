@@ -10,6 +10,9 @@ from app.rag.rag_pipeline import answer_question_with_trace
 from app.retrieval.vector_store import add_document, get_collection_stats
 
 
+MAX_UPLOAD_SIZE_BYTES = 200 * 1024 * 1024
+
+
 st.set_page_config(
     page_title="Enterprise AI Knowledge Assistant",
     page_icon="🤖",
@@ -37,18 +40,38 @@ if uploaded_files:
     st.subheader("Uploaded Documents")
 
     for uploaded_file in uploaded_files:
+        if uploaded_file.size > MAX_UPLOAD_SIZE_BYTES:
+            st.error(
+                f"Failed to process {uploaded_file.name}: "
+                "file size exceeds the 200 MB limit."
+            )
+            continue
+
+        if uploaded_file.size == 0:
+            st.error(
+                f"Failed to process {uploaded_file.name}: "
+                "the uploaded file is empty."
+            )
+            continue
+
         file_path = os.path.join(
             "data",
             "documents",
             uploaded_file.name,
         )
 
-        with open(file_path, "wb") as file:
-            file.write(uploaded_file.getbuffer())
-
         try:
+            with open(file_path, "wb") as file:
+                file.write(uploaded_file.getbuffer())
+
             document = load_document(file_path)
+
+            if not document["text"].strip():
+                raise ValueError("No readable text could be extracted from the document.")
+
             chunks = chunk_text(document["text"])
+            if not chunks:
+                raise ValueError("The document did not produce any searchable chunks.")
 
             for index, chunk in enumerate(chunks):
                 embedding = generate_embedding(chunk)

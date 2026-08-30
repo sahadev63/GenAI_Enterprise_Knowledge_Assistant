@@ -92,6 +92,7 @@ the required information is not available in the provided documents.
 - Semantic embeddings
 - ChromaDB vector storage
 - Semantic similarity search
+- Deterministic answerability guard for clear evidence
 - Top-K retrieval
 - Distance threshold filtering
 - Grounded answer generation
@@ -300,37 +301,35 @@ in the provided documents.
 
 ```text
 GenAI_Enterprise_Knowledge_Assistant/
-│
 ├── app.py
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
-│
 ├── app/
+│   ├── agents/
+│   │   ├── planner_agent.py
+│   │   ├── retriever_reasoner_agent.py
+│   │   ├── generator_agent.py
+│   │   ├── validator_agent.py
+│   │   └── orchestrator.py
 │   ├── ingestion/
-│   │   ├── embedding.py
-│   │   └── ...
-│   │
 │   ├── retrieval/
-│   │   ├── vector_store.py
-│   │   └── ...
-│   │
 │   ├── generation/
-│   │   ├── llm.py
-│   │   ├── prompt.py
-│   │   └── ...
-│   │
 │   ├── rag/
-│   │   ├── rag_pipeline.py
-│   │   └── ...
-│   │
 │   └── evaluation/
-│       └── ...
-│
-└── data/
-    ├── documents/
-    ├── evaluation/
-    └── vectorstore/
+├── data/
+│   ├── documents/
+│   ├── evaluation/
+│   └── vectorstore/
+└── docs/
+    ├── CAPSTONE_REPORT.md
+    ├── CAPSTONE_REPORT.docx
+    ├── CAPSTONE_REQUIREMENT_MAPPING.md
+    ├── PROJECT_ARCHITECTURE.md
+    ├── RAG_PIPELINE.md
+    ├── EVALUATION_REPORT.md
+    └── SETUP_AND_DEPLOYMENT.md
+```
 
 ## Documentation
 

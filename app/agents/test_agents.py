@@ -56,3 +56,103 @@ def test_orchestrator_returns_traceable_answer_without_llm_planner():
     assert "24 days" in result.answer
     assert result.validation.supported is True
     assert result.trace
+
+
+def test_retriever_deterministic_answerability_accepts_direct_policy_evidence():
+    from app.agents.retriever_reasoner_agent import RetrieverReasonerAgent
+
+    agent = RetrieverReasonerAgent()
+    sufficient, reason = agent._deterministic_answerability(
+        "How many working days before planned leave should employees submit their request?",
+        "Employees should submit their leave request at least 5 working days before the planned leave.",
+    )
+
+    assert sufficient is True
+    assert "direct evidence" in reason.lower()
+
+
+def test_retriever_deterministic_answerability_rejects_unrelated_topic():
+    from app.agents.retriever_reasoner_agent import RetrieverReasonerAgent
+
+    agent = RetrieverReasonerAgent()
+    sufficient, _ = agent._deterministic_answerability(
+        "How many sick leave days are employees entitled to?",
+        "Employees are entitled to 24 days of annual leave every year.",
+    )
+
+    assert sufficient is False
+
+
+def test_planner_preserves_simple_question_as_single_retrieval_subtask():
+    with patch(
+        "app.agents.planner_agent.generate_json",
+        return_value={"strategy": "retrieve and validate"},
+    ):
+        question = "How many working days before planned leave should employees submit their request?"
+        plan = PlannerAgent().plan(question)
+
+    assert plan.subtasks == [question]
+
+
+def test_planner_preserves_partial_information_as_two_question_subtasks():
+    with patch(
+        "app.agents.planner_agent.generate_json",
+        return_value={"strategy": "retrieve both topics and validate each"},
+    ):
+        plan = PlannerAgent().plan(
+            "What are the annual leave and maternity leave policies?"
+        )
+
+    assert plan.subtasks == [
+        "What are the annual leave?",
+        "What are the maternity leave policies?",
+    ]
+
+
+def test_orchestrator_keeps_valid_partial_answer_verified():
+    annual = RetrievedEvidence(
+        question="What are the annual leave?",
+        query_used="annual leave",
+        documents=["Employees are entitled to 24 days of annual leave every year."],
+        metadatas=[{"file_name": "policy.pdf", "chunk_index": 0}],
+        distances=[0.2],
+        sufficient=True,
+    )
+    maternity = RetrievedEvidence(
+        question="What are the maternity leave policies?",
+        query_used="maternity leave",
+        documents=[],
+        metadatas=[],
+        distances=[],
+        sufficient=False,
+    )
+
+    orchestrator = AgentOrchestrator()
+    with patch.object(
+        orchestrator.planner,
+        "plan",
+        return_value=QueryPlan(
+            "What are the annual leave and maternity leave policies?",
+            ["What are the annual leave?", "What are the maternity leave policies?"],
+        ),
+    ), patch.object(
+        orchestrator.retriever,
+        "retrieve",
+        side_effect=[annual, maternity],
+    ), patch.object(
+        orchestrator.generator,
+        "generate",
+        return_value="Employees are entitled to 24 days of annual leave every year.",
+    ), patch.object(
+        orchestrator.validator,
+        "validate",
+        return_value=ValidationResult(True, True),
+    ):
+        result = orchestrator.run(
+            "What are the annual leave and maternity leave policies?"
+        )
+
+    assert "24 days" in result.answer
+    assert "maternity leave" in result.answer.lower()
+    assert result.validation.checked is True
+    assert result.validation.supported is True
