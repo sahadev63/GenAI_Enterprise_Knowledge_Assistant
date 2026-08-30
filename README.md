@@ -1,12 +1,40 @@
 # GenAI Enterprise Knowledge Assistant
 
-An Agentic Retrieval-Augmented Generation (RAG) based enterprise knowledge assistant
-that allows users to upload documents and ask questions using natural language.
+An **Agentic Retrieval-Augmented Generation (Agentic RAG)** enterprise knowledge assistant that allows users to upload enterprise documents and ask natural-language questions.
 
-The application retrieves relevant information from the uploaded documents
-using semantic search and generates grounded answers using a local LLM.
+The system combines document ingestion, semantic retrieval, autonomous planning/reasoning, grounded generation, and answer validation using a local LLM (Ollama/Llama 3.2).
 
----
+## Agentic workflow
+
+```text
+User Question
+     |
+     v
+Planner Agent
+     |
+     v
+Retriever / Reasoner Agent
+     |
+     +---- insufficient evidence ----> query rewrite / retry
+     |
+     v
+Generator Agent
+     |
+     v
+Validator Agent
+     |
+     +---- unsupported ----> evidence-only correction
+                                  |
+                                  v
+                              validate again
+     |
+     v
+Verified / Safe Answer
+```
+
+### Reliability and exception handling
+
+The orchestrator handles planner, retrieval, generation, and validation failures explicitly. Validation is **fail-closed**: if validation cannot be completed, the answer is not marked as verified. Rejected answers can be corrected from retrieved evidence and validated again.
 
 ## 1. Project Overview
 

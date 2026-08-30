@@ -1,134 +1,54 @@
 # Project Architecture
 
-## 1. High-Level Agentic Architecture
+## Agentic RAG architecture
 
 ```text
-                              ┌──────────────────────┐
-                              │      Streamlit UI    │
-                              └──────────┬───────────┘
-                                         │
-                              Upload / Ask Question
-                                         │
-                    ┌────────────────────┴────────────────────┐
-                    │                                         │
-             Document Ingestion                         User Question
-                    │                                         │
-             Text Extraction                            Planner Agent
-                    │                                         │
-          Heading-aware Chunking                       Subtasks / Strategy
-                    │                                         │
-                Embedding                                     ▼
-                    │                              Retriever / Reasoner Agent
-                    ▼                                         │
-               ┌───────────┐                         ┌─────────┴─────────┐
-               │ ChromaDB  │◄────────────────────────│ Semantic Retrieval │
-               └─────┬─────┘                         └─────────┬─────────┘
-                     │                                           │
-                     │                                  Sufficiency Check
-                     │                                      │       │
-                     │                                     NO      YES
-                     │                                      │       │
-                     │                              Query Rewrite   ▼
-                     │                                   │     Generator Agent
-                     │                                   └──────►    │
-                     │                                              ▼
-                     │                                       Validator Agent
-                     │                                              │
-                     └──────────────────────────────────────────────┤
-                                                                    ▼
-                                                            Verified Answer
-                                                                    │
-                                                                    ▼
-                                                              Streamlit UI
-```
-
-## 2. Main Components
-
-### Planner Agent
-Creates an execution plan and splits multi-part questions into independent subtasks.
-
-### Retriever / Reasoner Agent
-Performs semantic retrieval, relevance filtering, evidence grounding and
-sufficiency reasoning. It can rewrite the query and retry retrieval when evidence
-is insufficient.
-
-### Generator Agent
-Uses only retrieved evidence to produce a concise answer.
-
-### Validator Agent
-Checks factual claims in the generated answer against retrieved evidence.
-
-### Orchestrator
-Coordinates Planner → Retriever/Reasoner → Generator → Validator and returns a
-traceable result.
-
-### Ingestion
-Supports PDF, TXT, CSV and XLSX extraction, followed by heading-aware chunking
-and embedding generation.
-
-### ChromaDB
-Stores document embeddings and metadata and provides semantic similarity search.
-
-## 3. Query Flow
-
-```text
-User Question
-   ↓
-Input Validation
-   ↓
+Streamlit UI
+     |
+     v
+Agent Orchestrator
+     |
+     v
 Planner Agent
-   ↓
-Subtasks
-   ↓
+     |
+     v
 Retriever / Reasoner Agent
-   ↓
-Top-K + Distance Threshold + Grounding
-   ↓
-Sufficient? ── No ──► Query Rewrite ──► Retry
-   │
-  Yes
-   ↓
+     |
+     +---- insufficient evidence ----> query rewrite / retry
+     |
+     v
 Generator Agent
-   ↓
+     |
+     v
 Validator Agent
-   ↓
-Supported? ── No ──► Evidence-only correction
-   │
-  Yes
-   ↓
-Verified Answer + Sources + Trace
+     |
+     +---- unsupported ----> evidence-only correction
+                                  |
+                                  v
+                              Validator again
+     |
+     v
+Verified / Safe Answer
+
+Document path:
+Upload -> Format Loader -> Heading-aware Chunking
+-> SentenceTransformer Embeddings -> ChromaDB
+-> Semantic Retrieval -> Evidence Context
 ```
 
-## 4. Code Structure
+## Agent responsibilities
 
-```text
-app/
-├── agents/
-│   ├── common.py
-│   ├── models.py
-│   ├── planner_agent.py
-│   ├── retriever_reasoner_agent.py
-│   ├── generator_agent.py
-│   ├── validator_agent.py
-│   ├── orchestrator.py
-│   └── test_agents.py
-├── ingestion/
-├── retrieval/
-├── generation/
-├── rag/
-└── evaluation/
-```
+- **Planner Agent**: decomposes complex questions and determines a retrieval strategy.
+- **Retriever / Reasoner Agent**: retrieves evidence, checks relevance/sufficiency, and retries with rewritten queries.
+- **Generator Agent**: generates an answer from retrieved evidence.
+- **Validator Agent**: verifies generated claims against the evidence.
+- **Orchestrator**: coordinates all agents and enforces safe exception and validation behavior.
 
-## 5. Backward Compatibility
+## Exception and validation policy
 
-Existing callers can continue using:
+The validation path is **fail-closed**. A validator exception cannot be interpreted as successful validation. If LLM validation and deterministic fallback validation both fail, the result remains unverified and a controlled fallback is returned.
 
-```python
-from app.rag.rag_pipeline import answer_question
-```
+## Deployment
 
-For source metadata, validation status and execution trace, use:
+The reference deployment is a locally deployable Streamlit application using Ollama/Llama 3.2 for local LLM inference. Cloud deployment is a future enhancement and is not represented as an already-completed deployment.
 
-```python
-from app.rag.rag_pipeline import answer_question_with_trace
-```
