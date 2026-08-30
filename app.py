@@ -6,7 +6,7 @@ from app.config import RAG_DISTANCE_THRESHOLD, RAG_TOP_K
 from app.ingestion.document_loader import load_document
 from app.ingestion.embedding import generate_embedding
 from app.ingestion.text_chunker import chunk_text
-from app.rag.rag_pipeline import answer_question
+from app.rag.rag_pipeline import answer_question_with_trace
 from app.retrieval.vector_store import add_document, get_collection_stats
 
 
@@ -108,14 +108,41 @@ with st.form("question_form"):
 if search_clicked and question.strip():
     with st.spinner("Searching knowledge base and generating answer..."):
         try:
-            answer = answer_question(
+            result = answer_question_with_trace(
                 question,
                 n_results=RAG_TOP_K,
                 distance_threshold=RAG_DISTANCE_THRESHOLD,
             )
 
             st.subheader("🤖 AI Answer")
-            st.write(answer)
+            st.write(result.answer)
+
+            with st.expander("🧠 Agent Execution Trace"):
+                st.write("**Plan:**", result.plan.strategy)
+                for index, subtask in enumerate(result.plan.subtasks, start=1):
+                    st.write(f"**Subtask {index}:** {subtask}")
+                for item in result.trace:
+                    st.write(f"• {item}")
+
+            with st.expander("📚 Retrieved Sources"):
+                for index, evidence in enumerate(result.evidence, start=1):
+                    st.write(f"**Subtask {index}:** {evidence.question}")
+                    if evidence.metadatas:
+                        for metadata, distance in zip(evidence.metadatas, evidence.distances):
+                            st.write(
+                                f"📄 {metadata.get('file_name', 'unknown')} | "
+                                f"chunk {metadata.get('chunk_index', '?')} | "
+                                f"distance {distance:.4f}"
+                            )
+                    st.caption(evidence.reason)
+
+            validation = result.validation
+            if validation.supported:
+                st.success("✅ Final answer validated against retrieved evidence.")
+            else:
+                st.warning("⚠️ The final answer could not be fully validated against retrieved evidence.")
+                if validation.unsupported_claims:
+                    st.write("Validation notes:", validation.unsupported_claims)
 
         except Exception as error:
             st.error(f"Failed to generate answer: {error}")

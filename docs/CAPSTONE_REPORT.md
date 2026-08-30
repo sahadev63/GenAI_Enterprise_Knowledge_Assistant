@@ -2,9 +2,9 @@
 
 ## 1. Executive Summary
 
-The GenAI Enterprise Knowledge Assistant is a Retrieval-Augmented Generation (RAG) application that allows users to ask natural-language questions about information contained in enterprise documents.
+The GenAI Enterprise Knowledge Assistant is an agentic Retrieval-Augmented Generation (RAG) application that allows users to ask natural-language questions about information contained in enterprise documents.
 
-The system combines document ingestion, text chunking, embeddings, ChromaDB semantic retrieval, relevance filtering, and grounded local LLM generation through Ollama.
+The system combines document ingestion, heading-aware chunking, embeddings, ChromaDB semantic retrieval, relevance filtering, planner/retriever-reasoner/generator/validator agents, and grounded local LLM generation through Ollama.
 
 A key design goal is to avoid unsupported answers. When information is not available in the supplied documents, the assistant reports that it was not found instead of relying on outside knowledge.
 
@@ -18,6 +18,7 @@ A key design goal is to avoid unsupported answers. When information is not avail
 - Generate grounded answers.
 - Handle unknown and partially answerable questions.
 - Evaluate retrieval and RAG behavior.
+- Coordinate planning, retrieval reasoning, generation and validation through an agent orchestrator.
 
 ## 3. Technology Stack
 
@@ -42,13 +43,25 @@ Document → Text Extraction → Chunking → Embedding → ChromaDB
 
 User Question → Embedding → Semantic Search → Top-K → Distance Filtering → Context → Prompt + Context → LLM → Grounded Answer
 
-## 5. Grounding
+## 5. Agentic Workflow
+
+The query path is coordinated by `AgentOrchestrator`:
+
+1. **Planner Agent** — creates subtasks and an execution strategy.
+2. **Retriever/Reasoner Agent** — retrieves evidence, checks grounding and decides whether the evidence is sufficient.
+3. **Generator Agent** — generates an answer only from sufficient evidence.
+4. **Validator Agent** — checks generated claims against the evidence.
+5. **Correction fallback** — if validation rejects an answer, the system returns evidence-only content rather than presenting an unverified generated claim.
+
+The retriever/reasoner can retry retrieval using expanded query variants, with a configurable retry limit.
+
+## 6. Grounding
 
 The generation prompt instructs the LLM to use only facts supplied in the context, avoid guessing, and explicitly report unsupported requested information.
 
 The system also supports partial information. Therefore, if one part of a question is answerable and another part is unavailable, the answerable part is returned and the unavailable part is reported separately.
 
-## 6. Evaluation Results
+## 7. Evaluation Results
 
 ### Retrieval Evaluation
 
@@ -72,12 +85,12 @@ The RAG tests covered:
 4. Partial information
 5. Unrelated question
 
-## 7. Observed Evaluation Limitation
+## 8. Observed Evaluation Limitation
 
 One retrieval test for sick-leave entitlement returned a document chunk even though the evaluation expected the information to be unavailable. This produced one false positive and resulted in retrieval precision of 85.71%.
 
 The complete RAG pipeline nevertheless passed its unknown-question and grounding tests. This observation is retained as an evaluation limitation rather than being hidden.
 
-## 8. Conclusion
+## 9. Conclusion
 
 The project demonstrates a complete enterprise RAG workflow with semantic retrieval, relevance filtering, grounded local LLM generation, and explicit handling of missing information.
