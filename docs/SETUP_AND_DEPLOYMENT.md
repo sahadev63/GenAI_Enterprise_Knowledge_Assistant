@@ -100,3 +100,16 @@ __pycache__/
 ```
 
 The submission ZIP should contain the source code, documentation, requirements, evaluation files, sample documents, and the project's persisted vector store when required by the application.
+
+
+## Capstone Deployment Statement
+
+The application is locally deployable with Streamlit and Ollama/Llama 3.2. The end-to-end workflow is:
+
+`Document Ingestion -> Chunking -> Embeddings -> ChromaDB -> Retrieval -> Agent Planning/Reasoning -> Grounded Generation -> Validation -> Safe Answer`
+
+The project does not claim an already-completed cloud deployment; cloud hosting is a future enhancement.
+
+### Reliability
+
+Planner, retrieval, generation, and validation failures are handled explicitly. Validation is fail-closed so an exception cannot turn an unverified answer into a verified answer.
