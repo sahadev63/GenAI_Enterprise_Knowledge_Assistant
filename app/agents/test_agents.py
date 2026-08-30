@@ -156,3 +156,33 @@ def test_orchestrator_keeps_valid_partial_answer_verified():
     assert "maternity leave" in result.answer.lower()
     assert result.validation.checked is True
     assert result.validation.supported is True
+
+
+def test_multi_part_question_reports_supported_and_missing_topics():
+    annual = RetrievedEvidence(
+        question="What are the annual leave?",
+        query_used="annual leave",
+        documents=["Employees are entitled to 24 days of annual leave every year."],
+        metadatas=[{"file_name": "policy.pdf", "chunk_index": 0}],
+        distances=[0.2],
+        sufficient=True,
+    )
+    maternity = RetrievedEvidence(
+        question="What are the maternity leave policies?",
+        query_used="maternity leave",
+        documents=[], metadatas=[], distances=[], sufficient=False,
+    )
+    orchestrator = AgentOrchestrator()
+    with patch.object(orchestrator.planner, "plan", return_value=QueryPlan(
+        "What are the annual leave and maternity leave policies?",
+        ["What are the annual leave?", "What are the maternity leave policies?"],
+    )), patch.object(orchestrator.retriever, "retrieve", side_effect=[annual, maternity]), patch.object(
+        orchestrator.generator, "generate", return_value="Employees are entitled to 24 days of annual leave every year."
+    ):
+        result = orchestrator.run("What are the annual leave and maternity leave policies?")
+
+    assert "24 days" in result.answer
+    assert "maternity leave" in result.answer.lower()
+    assert "not found" in result.answer.lower()
+    assert result.validation.checked is True
+    assert result.validation.supported is True

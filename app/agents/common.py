@@ -44,10 +44,24 @@ def context_supports_question(question: str, context: str) -> bool:
 
 
 def split_multi_part_question(question: str) -> list[str]:
-    """Split simple multi-part questions while preserving question intent."""
-    parts = re.split(r"\s+\band\b\s+", question.strip(), flags=re.IGNORECASE)
+    """Split common multi-topic questions without changing their intent.
+
+    Examples:
+      What are the annual leave and maternity leave policies?
+        -> What are the annual leave?
+        -> What are the maternity leave policies?
+
+      What is annual leave and what is sick leave?
+        -> What is annual leave?
+        -> What is sick leave?
+
+    The split is deliberately conservative: only an explicit standalone
+    ``and`` is treated as a separator.
+    """
+    original = (question or "").strip()
+    parts = re.split(r"\s+\band\b\s+", original, flags=re.IGNORECASE)
     if len(parts) == 1:
-        return [question.strip()]
+        return [original]
 
     first = parts[0].strip(" ?.")
     match = re.match(
@@ -67,7 +81,7 @@ def split_multi_part_question(question: str) -> list[str]:
         else:
             normalized.append(part + "?")
 
-    return normalized
+    return [item for item in normalized if item.strip(" ?.")]
 
 
 def sentence_list(text: str) -> list[str]:
