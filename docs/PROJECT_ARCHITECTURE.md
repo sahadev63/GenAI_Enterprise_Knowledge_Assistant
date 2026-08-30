@@ -1,107 +1,134 @@
 # Project Architecture
 
-## 1. High-Level Architecture
+## 1. High-Level Agentic Architecture
 
 ```text
-                    ┌──────────────────────┐
-                    │      Streamlit UI    │
-                    └──────────┬───────────┘
-                               │
-                    Upload / Ask Question
-                               │
-              ┌────────────────┴────────────────┐
-              │                                 │
-       Document Ingestion                 User Question
-              │                                 │
-       Text Extraction                    Embedding
-              │                                 │
-          Chunking                              │
-              │                                 │
-          Embedding                             │
-              │                                 │
-              └──────────────┐     ┌─────────────┘
-                             ▼     ▼
-                         ┌────────────┐
-                         │  ChromaDB  │
-                         └─────┬──────┘
-                               │
-                       Semantic Retrieval
-                               │
-                           Top-K Filter
-                               │
-                       Distance Threshold
-                               │
-                        Relevant Context
-                               │
-                        Prompt + Context
-                               │
-                         Ollama / LLM
-                               │
-                         Grounded Answer
-                               ▼
-                        Streamlit Response
+                              ┌──────────────────────┐
+                              │      Streamlit UI    │
+                              └──────────┬───────────┘
+                                         │
+                              Upload / Ask Question
+                                         │
+                    ┌────────────────────┴────────────────────┐
+                    │                                         │
+             Document Ingestion                         User Question
+                    │                                         │
+             Text Extraction                            Planner Agent
+                    │                                         │
+          Heading-aware Chunking                       Subtasks / Strategy
+                    │                                         │
+                Embedding                                     ▼
+                    │                              Retriever / Reasoner Agent
+                    ▼                                         │
+               ┌───────────┐                         ┌─────────┴─────────┐
+               │ ChromaDB  │◄────────────────────────│ Semantic Retrieval │
+               └─────┬─────┘                         └─────────┬─────────┘
+                     │                                           │
+                     │                                  Sufficiency Check
+                     │                                      │       │
+                     │                                     NO      YES
+                     │                                      │       │
+                     │                              Query Rewrite   ▼
+                     │                                   │     Generator Agent
+                     │                                   └──────►    │
+                     │                                              ▼
+                     │                                       Validator Agent
+                     │                                              │
+                     └──────────────────────────────────────────────┤
+                                                                    ▼
+                                                            Verified Answer
+                                                                    │
+                                                                    ▼
+                                                              Streamlit UI
 ```
 
 ## 2. Main Components
 
-### Streamlit
+### Planner Agent
+Creates an execution plan and splits multi-part questions into independent subtasks.
 
-Provides the user interface for document interaction and question answering.
+### Retriever / Reasoner Agent
+Performs semantic retrieval, relevance filtering, evidence grounding and
+sufficiency reasoning. It can rewrite the query and retry retrieval when evidence
+is insufficient.
+
+### Generator Agent
+Uses only retrieved evidence to produce a concise answer.
+
+### Validator Agent
+Checks factual claims in the generated answer against retrieved evidence.
+
+### Orchestrator
+Coordinates Planner → Retriever/Reasoner → Generator → Validator and returns a
+traceable result.
 
 ### Ingestion
-
-Loads supported documents, extracts text, creates chunks, generates embeddings, and stores vector data.
+Supports PDF, TXT, CSV and XLSX extraction, followed by heading-aware chunking
+and embedding generation.
 
 ### ChromaDB
+Stores document embeddings and metadata and provides semantic similarity search.
 
-Stores document embeddings and supports semantic similarity search.
-
-### Retrieval
-
-Converts a user question into an embedding, searches ChromaDB, applies Top-K retrieval, and filters results using the configured distance threshold.
-
-### Generation
-
-Builds a grounding-oriented prompt and sends the relevant context to the local LLM through Ollama.
-
-### Evaluation
-
-Contains tests for retrieval behavior and complete RAG pipeline behavior.
-
-## 3. Data Flow
-
-### Ingestion flow
-
-```text
-Document
-   ↓
-Extract Text
-   ↓
-Create Chunks
-   ↓
-Generate Embeddings
-   ↓
-Store in ChromaDB
-```
-
-### Query flow
+## 3. Query Flow
 
 ```text
 User Question
    ↓
-Generate Query Embedding
+Input Validation
    ↓
-ChromaDB Similarity Search
+Planner Agent
    ↓
-Top-K Candidates
+Subtasks
    ↓
-Distance Threshold
+Retriever / Reasoner Agent
    ↓
-Relevant Context
+Top-K + Distance Threshold + Grounding
    ↓
-Grounding Prompt
+Sufficient? ── No ──► Query Rewrite ──► Retry
+   │
+  Yes
    ↓
-LLM
+Generator Agent
    ↓
-Final Answer
+Validator Agent
+   ↓
+Supported? ── No ──► Evidence-only correction
+   │
+  Yes
+   ↓
+Verified Answer + Sources + Trace
+```
+
+## 4. Code Structure
+
+```text
+app/
+├── agents/
+│   ├── common.py
+│   ├── models.py
+│   ├── planner_agent.py
+│   ├── retriever_reasoner_agent.py
+│   ├── generator_agent.py
+│   ├── validator_agent.py
+│   ├── orchestrator.py
+│   └── test_agents.py
+├── ingestion/
+├── retrieval/
+├── generation/
+├── rag/
+└── evaluation/
+```
+
+## 5. Backward Compatibility
+
+Existing callers can continue using:
+
+```python
+from app.rag.rag_pipeline import answer_question
+```
+
+For source metadata, validation status and execution trace, use:
+
+```python
+from app.rag.rag_pipeline import answer_question_with_trace
 ```

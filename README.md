@@ -1,6 +1,6 @@
 # GenAI Enterprise Knowledge Assistant
 
-A Retrieval-Augmented Generation (RAG) based enterprise knowledge assistant
+An Agentic Retrieval-Augmented Generation (RAG) based enterprise knowledge assistant
 that allows users to upload documents and ask questions using natural language.
 
 The application retrieves relevant information from the uploaded documents
@@ -10,7 +10,23 @@ using semantic search and generates grounded answers using a local LLM.
 
 ## 1. Project Overview
 
-The system follows a RAG architecture:
+The system follows an agentic RAG architecture:
+
+User Question
+    ↓
+Planner Agent
+    ↓
+Retriever / Reasoner Agent
+    ↓
+Generator Agent
+    ↓
+Validator Agent
+    ↓
+Verified Grounded Answer
+
+The original deterministic RAG pipeline remains available through the same
+`answer_question()` API, while the new orchestration path adds planning,
+retrieval sufficiency checks, controlled retries, and answer validation.
 
 User Question
     ↓
@@ -51,6 +67,10 @@ the required information is not available in the provided documents.
 - Top-K retrieval
 - Distance threshold filtering
 - Grounded answer generation
+- Planner, Retriever/Reasoner, Generator and Validator agents
+- Retrieval sufficiency checks and controlled query retries
+- Evidence-backed answer validation
+- Agent execution trace and source display
 - Missing-information handling
 - Partial-information handling
 - Local LLM using Ollama
@@ -77,7 +97,7 @@ the required information is not available in the provided documents.
 
 ---
 
-## 4. RAG Pipeline
+## 4. Agentic RAG Pipeline
 
 ### Step 1: Document Upload
 
@@ -147,7 +167,73 @@ available in the documents.
 
 ---
 
-## 5. Grounding and Missing Information
+## 5. Agent Architecture
+
+```text
+                         User Question
+                              │
+                              ▼
+                     ┌─────────────────┐
+                     │  Planner Agent  │
+                     └────────┬────────┘
+                              │
+                  one or more subtasks
+                              │
+                              ▼
+              ┌────────────────────────────┐
+              │ Retriever / Reasoner Agent │
+              └─────────────┬──────────────┘
+                            │
+                    evidence sufficient?
+                       /             \
+                     NO              YES
+                     │                │
+                rewrite query        ▼
+                     │        ┌───────────────┐
+                     └───────►│ Generator     │
+                              │ Agent         │
+                              └───────┬───────┘
+                                      │
+                                      ▼
+                              ┌───────────────┐
+                              │ Validator     │
+                              │ Agent         │
+                              └───────┬───────┘
+                                      │
+                                      ▼
+                              Verified Answer
+```
+
+### Planner Agent
+
+Breaks a complex user request into independent subtasks. The local LLM is
+asked for a JSON plan; a deterministic fallback is used if the model is
+unavailable or returns invalid JSON.
+
+### Retriever / Reasoner Agent
+
+Embeds each subtask, retrieves Top-K evidence, applies the configured distance
+threshold and a grounding check, then asks the local LLM whether the evidence
+is sufficient. If evidence is insufficient, it retries with query-expanded
+variants, up to the configured retry limit.
+
+### Generator Agent
+
+Generates an answer using only the evidence selected by the retriever/reasoner.
+
+### Validator Agent
+
+Checks the generated answer against the retrieved evidence. Unsupported output
+is not accepted as a verified answer. A deterministic evidence-only fallback is
+used when validation cannot be completed by the local LLM.
+
+### Orchestrator
+
+`AgentOrchestrator` coordinates all agents and returns the answer together with
+the execution trace, evidence metadata, retrieval attempts and validation
+status.
+
+## 6. Grounding and Missing Information
 
 The system handles missing information explicitly.
 
@@ -182,7 +268,7 @@ in the provided documents.
 
 ---
 
-## 6. Project Structure
+## 7. Project Structure
 
 ```text
 GenAI_Enterprise_Knowledge_Assistant/
