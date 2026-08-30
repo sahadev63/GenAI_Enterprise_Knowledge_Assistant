@@ -79,3 +79,32 @@ def test_validator_ignores_standard_missing_information_statement():
 
     assert result.checked is True
     assert result.supported is True
+
+
+def test_validator_rejects_hallucinated_notice_number():
+    evidence = RetrievedEvidence(
+        question="How many annual leave days are employees entitled to?",
+        query_used="annual leave days",
+        documents=[EVIDENCE],
+        metadatas=[{"file_name": "test_policy.pdf", "chunk_index": 0}],
+        distances=[0.2],
+        sufficient=True,
+    )
+    result = ValidatorAgent().validate_deterministic(
+        evidence.question,
+        "Employees are entitled to 30 days of annual leave every year.",
+        evidence,
+    )
+    assert result.checked is True
+    assert result.supported is False
+
+
+def test_validator_accepts_policy_paraphrase():
+    evidence = _evidence()
+    result = ValidatorAgent().validate_deterministic(
+        evidence.question,
+        "Employees receive 24 days of annual leave every year.",
+        evidence,
+    )
+    assert result.checked is True
+    assert result.supported is True

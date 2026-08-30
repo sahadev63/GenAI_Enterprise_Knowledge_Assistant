@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from app.agents.common import FALLBACK, split_multi_part_question
 from app.agents.generator_agent import GeneratorAgent
 from app.agents.models import AgentAnswer, QueryPlan, RetrievedEvidence, ValidationResult
@@ -234,9 +236,17 @@ class AgentOrchestrator:
 
     @staticmethod
     def _topic(question: str) -> str:
+        """Return a natural topic phrase for a missing-information message."""
         text = question.strip(" ?.")
-        text = text.split(" ", 1)[1] if " " in text else text
-        return text or "that information"
+        text = re.sub(
+            r"^(what|which|how|when|who)\b\s*", "", text, flags=re.IGNORECASE
+        )
+        text = re.sub(
+            r"^(is|are|was|were|many|much|does|do|did|can|could|should|would|will)\b\s*",
+            "", text, flags=re.IGNORECASE
+        )
+        text = re.sub(r"^the\s+", "", text, flags=re.IGNORECASE)
+        return text.strip(" ?.") or "that information"
 
     @staticmethod
     def _evidence_only_answer(question: str, evidence: RetrievedEvidence) -> str:

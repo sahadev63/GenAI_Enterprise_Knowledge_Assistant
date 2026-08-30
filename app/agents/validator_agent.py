@@ -240,9 +240,22 @@ ANSWER:
             if not evidence_terms:
                 continue
 
-            overlap = len(answer_terms.intersection(evidence_terms)) / len(answer_terms)
-            reverse_overlap = len(answer_terms.intersection(evidence_terms)) / len(evidence_terms)
+            shared_terms = answer_terms.intersection(evidence_terms)
+            overlap = len(shared_terms) / len(answer_terms)
+            reverse_overlap = len(shared_terms) / len(evidence_terms)
             similarity = SequenceMatcher(None, normalized_answer, normalized_evidence).ratio()
+
+            # Common safe paraphrases in policy answers should not cause a
+            # false negative merely because the generator changed wording
+            # such as ``entitled to`` -> ``receive``.
+            paraphrase_pairs = (("entitled", "receive"), ("entitled", "allowed"),
+                                ("entitlement", "receive"), ("request", "submit"),
+                                ("submitting", "submit"))
+            paraphrase_match = any(
+                (a in answer_terms and b in evidence_terms) or
+                (b in answer_terms and a in evidence_terms)
+                for a, b in paraphrase_pairs
+            )
 
             # Numeric claims are especially important: the same number must be
             # present in the evidence before a numerical answer is accepted.
@@ -253,7 +266,12 @@ ANSWER:
 
             # High overlap accepts close paraphrases while avoiding a single
             # shared topic word being treated as proof.
-            if (overlap >= 0.70 and reverse_overlap >= 0.35) or similarity >= 0.82:
+            if (overlap >= 0.65 and reverse_overlap >= 0.35) or similarity >= 0.80:
+                return True
+
+            # Permit one controlled paraphrase only when the remaining claim
+            # terms are still strongly anchored in the evidence.
+            if paraphrase_match and overlap >= 0.55 and reverse_overlap >= 0.35:
                 return True
 
         return False
