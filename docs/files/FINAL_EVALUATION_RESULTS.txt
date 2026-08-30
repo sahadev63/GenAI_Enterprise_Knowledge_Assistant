@@ -32,3 +32,18 @@ information to be unavailable. This is documented as a retrieval-evaluation
 limitation.
 
 The complete RAG pipeline still passed all five end-to-end tests.
+
+
+Agentic RAG Reliability Fixes
+-----------------------------
+The planner now preserves the user's question wording for retrieval instead
+of allowing the planning LLM to create vague meta-level subtasks.
+
+For multi-part questions, a missing topic is treated as an explicit
+evidence-based abstention, so supported parts remain verified.
+
+Deterministic regression checks cover:
+- working-days-before-leave evidence;
+- unrelated sick-leave rejection;
+- precise single-question planning; and
+- partial-information orchestration.

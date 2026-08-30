@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from app.agents.common import context_supports_question, focused_context
 from app.agents.models import RetrievedEvidence
 from app.config import (
@@ -43,7 +45,21 @@ class RetrieverReasonerAgent:
             context = "\n\n".join(documents)
 
             heuristic = bool(documents) and context_supports_question(question, context)
-            sufficient, reason = self._reason_about_sufficiency(question, context, heuristic)
+
+            # Prefer a deterministic answerability check for clear evidence.
+            # The local LLM is useful for ambiguous cases, but it can
+            # incorrectly reject an exact policy statement.  A direct factual
+            # match must therefore not be downgraded by the LLM judge.
+            deterministic_sufficient, deterministic_reason = (
+                self._deterministic_answerability(question, context)
+            )
+
+            if deterministic_sufficient:
+                sufficient, reason = True, deterministic_reason
+            else:
+                sufficient, reason = self._reason_about_sufficiency(
+                    question, context, heuristic
+                )
 
             last = RetrievedEvidence(
                 question=question,
@@ -62,6 +78,78 @@ class RetrieverReasonerAgent:
                 return last
 
         return last
+
+    @staticmethod
+    def _deterministic_answerability(question: str, context: str) -> tuple[bool, str]:
+        """Detect clear answer-bearing evidence without depending on the LLM.
+
+        This protects known policy facts from false-negative LLM sufficiency
+        judgments while remaining conservative for unrelated questions.
+        """
+        if not question.strip() or not context.strip():
+            return False, "Question or retrieved context was empty."
+
+        from app.agents.common import sentence_list, specific_query_terms, tokens
+
+        question_terms = specific_query_terms(question)
+        if not question_terms:
+            return False, "No meaningful question terms were available."
+
+        question_lower = question.lower()
+        context_sentences = sentence_list(context)
+
+        # Question-type requirements make the check more precise.
+        needs_number = bool(
+            re.search(r"\b(how many|how much|number of|days|amount)\b", question_lower)
+        )
+        needs_person_or_role = bool(
+            re.search(r"\b(who|responsible|approv)\b", question_lower)
+        )
+        needs_condition = bool(
+            re.search(r"\b(when|condition|require|requirement|eligible|eligibility)\b", question_lower)
+        )
+
+        for sentence in context_sentences:
+            sentence_terms = tokens(sentence)
+            overlap = question_terms.intersection(sentence_terms)
+
+            # One distinctive domain term can be sufficient for a topic
+            # question (for example, "annual leave"), while question-type
+            # checks below still require the actual fact for numeric/timing/
+            # responsibility questions.  Generic words are removed by
+            # specific_query_terms(), so this does not rely on "policy",
+            # "employee", "leave", etc. alone.
+            if len(overlap) < 1:
+                continue
+
+            numbers = re.findall(r"\b\d+(?:\.\d+)?\b", sentence)
+            if needs_number and not numbers:
+                continue
+
+            # For "who" questions, evidence should contain a likely role/person
+            # indicator rather than merely repeating the topic.
+            if needs_person_or_role and not re.search(
+                r"\b(manager|managers|supervisor|supervisors|hr|human resources|owner|team|department|responsible)\b",
+                sentence,
+                flags=re.IGNORECASE,
+            ):
+                continue
+
+            # For timing/condition questions, require an action/condition
+            # concept in the same evidence sentence.
+            if needs_condition and not re.search(
+                r"\b(before|after|when|required|request|submit|eligible|eligibility|condition|requirement|responsible|approve|approving|approved)\b",
+                sentence,
+                flags=re.IGNORECASE,
+            ):
+                continue
+
+            return (
+                True,
+                "Deterministic answerability check found direct evidence in the retrieved policy text.",
+            )
+
+        return False, "Retrieved evidence did not contain enough direct terms to answer deterministically."
 
     @staticmethod
     def _query_variants(question: str) -> list[str]:

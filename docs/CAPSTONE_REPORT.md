@@ -54,6 +54,7 @@ The query path is coordinated by `AgentOrchestrator`:
 5. **Correction fallback** — if validation rejects an answer, the system returns evidence-only content rather than presenting an unverified generated claim.
 
 The retriever/reasoner can retry retrieval using expanded query variants, with a configurable retry limit.
+For clear evidence-bearing policy statements, a deterministic answerability check runs before the LLM sufficiency judge. This prevents an otherwise valid retrieved fact from being rejected because of an inconsistent local-LLM judgment.
 
 ## 6. Grounding
 

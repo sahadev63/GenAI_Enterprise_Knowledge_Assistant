@@ -43,7 +43,17 @@ Verify:
 ollama list
 ```
 
-## 5. Run the Application
+## 5. Rebuild the Vector Store (Optional)
+
+The submission contains a persisted ChromaDB vector store for the sample
+documents. If the vector store is removed or you want to rebuild it:
+
+```bash
+python -m app.ingestion.clean_vector_store
+python -m app.ingestion.index_documents
+```
+
+## 6. Run the Application
 
 From the project root:
 
@@ -51,7 +61,7 @@ From the project root:
 streamlit run app.py
 ```
 
-## 6. Run Evaluation Tests
+## 7. Run Evaluation Tests
 
 Retrieval evaluation:
 
@@ -71,7 +81,7 @@ RAG pipeline test:
 python -m app.rag.test_rag_pipeline
 ```
 
-## 7. Expected Validation
+## 8. Expected Validation
 
 The current verified project produced:
 
@@ -85,7 +95,7 @@ Passed              : 5/5
 Success Rate        : 100.00%
 ```
 
-## 8. Submission Packaging
+## 9. Submission Packaging
 
 The `.venv` directory should not be included in the submission ZIP.
 

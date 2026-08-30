@@ -2,15 +2,24 @@ Final Submission Checklist
 
 [PASS] RAG pipeline tested
 [PASS] Retrieval evaluation completed
-[PASS] RAG evaluation completed
+[PASS] RAG evaluation documented
 [PASS] README included
 [PASS] requirements.txt included
 [PASS] docs/ included
-[PASS] evaluation results documented
+[PASS] capstone requirement mapping included
+[PASS] sample documents included
 [PASS] data/vectorstore included
 [PASS] .venv excluded
 [PASS] .env excluded
 [PASS] __pycache__ excluded
 [PASS] .pyc files excluded
+[PASS] .pytest_cache excluded
 [PASS] .vscode excluded
-[PASS] old src/ implementation excluded
+[PASS] project_structure.txt regenerated for submission contents
+
+[PASS] Deterministic answerability guard added to prevent LLM sufficiency false negatives
+[PASS] Upload size, empty-file and empty-extracted-text validation included
+
+[PASS] Deterministic planner preserves user questions for retrieval
+[PASS] Partial-information answers remain verified when missing topics are explicitly abstained
+[PASS] Regression coverage added for planner and partial-information orchestration

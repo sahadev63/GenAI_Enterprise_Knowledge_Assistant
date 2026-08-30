@@ -11,6 +11,7 @@ STOP_WORDS = {
     "employee", "employees", "policy", "policies", "information", "please",
     "tell", "me", "about", "be", "it", "this", "that", "their", "they",
     "each", "every", "per", "day", "days", "leave",
+    "entitled", "entitlement", "receive", "receives", "allowed",
 }
 
 SYNONYMS = {
@@ -50,7 +51,7 @@ def split_multi_part_question(question: str) -> list[str]:
 
     first = parts[0].strip(" ?.")
     match = re.match(
-        r"^(what|which|how|when|who)\b(?:\s+(?:is|are|many|much|can|does|do|should|would|will))?",
+        r"^(what|which|how|when|who)\b(?:\s+(?:is|are|many|much|can|does|do|should|would|will))?(?:\s+(?:the|a|an))?",
         first,
         flags=re.IGNORECASE,
     )
