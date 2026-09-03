@@ -1,0 +1,53 @@
+GenAI Enterprise Knowledge Assistant
+Final Package Verification - 1 September 2026
+
+Package-level checks
+--------------------
+[PASS] All Python source files compile successfully with Python compileall.
+[PASS] Submission package excludes .venv, __pycache__, .pytest_cache, .pyc, and local Chroma runtime data.
+[PASS] README, requirements.txt, architecture documentation, evaluation documentation, and sample documents are present.
+[PASS] Project structure regenerated from the clean submission contents.
+
+Regression tests executed in the packaging environment
+--------------------------------------------------------
+[PASS] 3/3 lightweight regression/ingestion tests passed.
+
+Previously verified end-to-end RAG evaluation
+---------------------------------------------
+[PASS] RAG pipeline evaluation: 5/5 (100.00%).
+[PASS] Retrieval evaluation: precision 85.71%, recall 100.00%, F1 92.31%.
+
+Important runtime note
+----------------------
+The full application requires the dependencies in requirements.txt and a local
+Ollama installation with llama3.2:3b. The packaging environment used for this
+final clean-archive check does not contain ChromaDB, SentenceTransformers,
+Transformers, Streamlit, or Ollama, so a fresh end-to-end model execution was
+not repeated inside this packaging environment.
+
+Reliability fixes included
+--------------------------
+- Deterministic answerability guard for clear policy evidence.
+- Evidence-grounding validation with deterministic checks and LLM fallback.
+- Multi-part question handling with explicit missing-information abstentions.
+- Planner preserves the user's wording for retrieval subtasks.
+- Chroma collection is resolved dynamically after knowledge-base reset.
+- Cosine-distance collection is enforced for retrieval.
+- Empty/missing/unreadable document validation.
+
+
+Post-fix reliability updates
+----------------------------
+[PASS] Domain terms such as leave/days are retained for retrieval grounding.
+[PASS] Advance/early/ahead/prior wording is expanded to the policy concept "before".
+[PASS] Strict distance filtering has a nearest-candidate fallback protected by deterministic grounding and final validation.
+[PASS] Existing L2 Chroma data is migrated instead of being deleted when cosine retrieval is required.
+[PASS] Legacy RAG generator no longer imports a second unused Transformers model stack.
+
+Packaging-environment verification
+-----------------------------------
+[PASS] Final source tree was inspected and packaged without .git, .venv,
+       __pycache__, .pytest_cache, or local Chroma runtime data.
+[PASS] Python source compilation was checked during final packaging.
+[NOTE] Full runtime RAG execution requires the project's normal Python
+       dependencies and a local Ollama installation with llama3.2:3b.
